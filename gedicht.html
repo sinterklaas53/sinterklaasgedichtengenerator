@@ -1,0 +1,110 @@
+<!doctype html>
+<html lang="nl">
+  <head>
+    <meta charset="UTF-8" />
+    <title>Sinterklaasgedichten generator</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <style>
+      body {
+        font-family: system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI",
+          sans-serif;
+        max-width: 800px;
+        margin: 2rem auto;
+        padding: 0 1rem;
+        line-height: 1.5;
+      }
+      h1 {
+        font-size: 1.8rem;
+        margin-bottom: 0.5rem;
+      }
+      textarea {
+        width: 100%;
+        min-height: 120px;
+        margin: 0.5rem 0 1rem;
+        padding: 0.5rem;
+        font-family: inherit;
+        font-size: 1rem;
+      }
+      button {
+        padding: 0.6rem 1.2rem;
+        font-size: 1rem;
+        border-radius: 4px;
+        border: none;
+        cursor: pointer;
+      }
+      #output {
+        white-space: pre-wrap;
+        border: 1px solid #ddd;
+        padding: 1rem;
+        margin-top: 1rem;
+        min-height: 4rem;
+      }
+    </style>
+  </head>
+  <body>
+    <h1>Sinterklaasgedichten generator</h1>
+
+    <p>Vul hieronder een omschrijving in van het cadeau of de situatie.</p>
+
+    <textarea id="prompt" placeholder="Bijv: een boek en wat lekkers, samen leesvoer..."></textarea>
+
+    <button id="generate">Maak gedicht</button>
+
+    <h2>Resultaat</h2>
+    <div id="output">Hier komt het gedicht…</div>
+
+    <script>
+      const btn = document.getElementById("generate");
+      const promptEl = document.getElementById("prompt");
+      const outputEl = document.getElementById("output");
+
+      btn.addEventListener("click", async () => {
+        const prompt = promptEl.value.trim();
+        if (!prompt) {
+          alert("Geef eerst een omschrijving.");
+          return;
+        }
+
+        btn.disabled = true;
+        outputEl.textContent = "Sint is aan het dichten…";
+
+        try {
+          const res = await fetch("/api/gedicht", {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({ prompt }),
+          });
+
+          const text = await res.text();
+          let data;
+
+          try {
+            data = JSON.parse(text);
+          } catch {
+            outputEl.textContent = "Server gaf geen geldige JSON:\n" + text;
+            btn.disabled = false;
+            return;
+          }
+
+          if (!res.ok) {
+            outputEl.textContent =
+              "Fout van server:\n" + JSON.stringify(data, null, 2);
+            return;
+          }
+
+          if (data.error) {
+            outputEl.textContent =
+              "API-fout:\n" + JSON.stringify(data, null, 2);
+            return;
+          }
+
+          outputEl.textContent = data.text || "Geen tekst ontvangen.";
+        } catch (err) {
+          outputEl.textContent = "Er ging iets mis:\n" + err;
+        } finally {
+          btn.disabled = false;
+        }
+      });
+    </script>
+  </body>
+</html>
